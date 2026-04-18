@@ -176,6 +176,57 @@ function textComponentPreviewHtml(parsedComponent) {
     }).join("");
 }
 
+function rustStyleChain(segment) {
+    const lines = [];
+    const colorName = pumpkinNamedColors[String(segment.color || "").toLowerCase()];
+    const rgb = /^#[0-9a-f]{6}$/i.test(String(segment.color || "")) ? String(segment.color).slice(1) : "";
+
+    if (colorName) {
+        lines.push(`    .color_named(common::NamedColor::${colorName})`);
+    } else if (rgb) {
+        lines.push(`    .color_rgb(common::RgbColor { r: 0x${rgb.slice(0, 2)}, g: 0x${rgb.slice(2, 4)}, b: 0x${rgb.slice(4, 6)} })`);
+    }
+    if (segment.bold) {
+        lines.push("    .bold(true)");
+    }
+    if (segment.italic) {
+        lines.push("    .italic(true)");
+    }
+    if (segment.underlined) {
+        lines.push("    .underlined(true)");
+    }
+    if (segment.strikethrough) {
+        lines.push("    .strikethrough(true)");
+    }
+    if (segment.obfuscated) {
+        lines.push("    .obfuscated(true)");
+    }
+
+    return lines;
+}
+
+function rustTextComponentExpression(parsedComponent, fallbackStyle = {}) {
+    const segments = parsedComponent.segments.length
+        ? parsedComponent.segments
+        : [{ text: "", ...fallbackStyle }];
+
+    const componentForSegment = (segment) => {
+        const chain = [`TextComponent::text(${rustString(segment.text)})`, ...rustStyleChain(segment)];
+        return chain.join("\n");
+    };
+
+    if (segments.length === 1) {
+        return componentForSegment(segments[0]);
+    }
+
+    return [
+        "TextComponent::text(\"\")",
+        ...segments.map((segment) => {
+            return `    .add_child(\n${componentForSegment(segment).split("\n").map((line) => `        ${line}`).join("\n")}\n    )`;
+        })
+    ].join("\n");
+}
+
 function rustMethod(name) {
     return String(name)
         .replace(/\(.*/, "")
@@ -483,9 +534,8 @@ function renderTitleTool() {
                     <label class="field">Plain title color <select id="titleColor">
                         ${Object.entries(pumpkinNamedColors).map(([key]) => `<option value="${key}" ${key === "gold" ? "selected" : ""}>${key}</option>`).join("")}
                     </select></label>
-                    <label class="field">Command target <input id="titleTarget" value="@a"></label>
                 </div>
-                <p class="form-hint">Plain text works. For multiple colors or styles, paste Minecraft JSON text components like <code>["",{"text":"Mi"},{"text":"e","italic":true,"color":"red"}]</code>.</p>
+                <p class="form-hint">Plain text works. For multiple colors or styles, paste Minecraft JSON text components like <code>["",{"text":"Mi"},{"text":"e","italic":true,"color":"red"}]</code>. The generator outputs WASM Rust only.</p>
             </form>
             <div class="tool-output">
                 <div class="preview-title" id="titlePreview">
@@ -512,7 +562,6 @@ function renderTitleTool() {
         const subtitle = trimmedFormValue("subtitleText");
         const actionbar = trimmedFormValue("actionbarText");
         const color = readFormValue("titleColor");
-        const target = trimmedFormValue("titleTarget") || "@a";
         const fadeIn = Math.max(0, Number(readFormValue("fadeIn") || 0));
         const stay = Math.max(0, Number(readFormValue("stay") || 0));
         const fadeOut = Math.max(0, Number(readFormValue("fadeOut") || 0));
@@ -529,54 +578,26 @@ function renderTitleTool() {
         const blocks = [];
 
         if (title || subtitle || actionbar) {
-            blocks.push(`// Minecraft command output
-/title ${target} times ${fadeIn} ${stay} ${fadeOut}`);
-        }
-
-        if (title) {
-            blocks.push(`/title ${target} title ${titleComponent.commandJson}`);
-        }
-
-        if (subtitle) {
-            blocks.push(`/title ${target} subtitle ${subtitleComponent.commandJson}`);
-        }
-
-        if (actionbar) {
-            blocks.push(`/title ${target} actionbar ${actionbarComponent.commandJson}`);
-        }
-
-        const hasRichJson = titleComponent.isJson || subtitleComponent.isJson || actionbarComponent.isJson;
-        const rustBlocks = [];
-
-        if (title || subtitle || actionbar) {
-            rustBlocks.push("use pumpkin_plugin_api::{common, text::TextComponent};");
+            blocks.push("use pumpkin_plugin_api::{common, text::TextComponent};");
         }
 
         if (title || subtitle) {
-            rustBlocks.push(`player.send_title_animation(${fadeIn}, ${stay}, ${fadeOut});`);
+            blocks.push(`player.send_title_animation(${fadeIn}, ${stay}, ${fadeOut});`);
         }
 
         if (title) {
-            rustBlocks.push(`let title = TextComponent::text(${rustString(titleComponent.segments.map((segment) => segment.text).join(""))})
-    .color_named(common::NamedColor::${pumpkinNamedColors[color] || "Gold"})
-    .bold(true);
+            blocks.push(`let title = ${rustTextComponentExpression(titleComponent, { color, bold: true })};
 player.show_title(&title);`);
         }
 
         if (subtitle) {
-            rustBlocks.push(`let subtitle = TextComponent::text(${rustString(subtitleComponent.segments.map((segment) => segment.text).join(""))})
-    .color_named(common::NamedColor::White);
+            blocks.push(`let subtitle = ${rustTextComponentExpression(subtitleComponent, { color: "white" })};
 player.show_subtitle(&subtitle);`);
         }
 
         if (actionbar) {
-            rustBlocks.push(`let actionbar = TextComponent::text(${rustString(actionbarComponent.segments.map((segment) => segment.text).join(""))})
-    .color_named(common::NamedColor::Aqua);
+            blocks.push(`let actionbar = ${rustTextComponentExpression(actionbarComponent, { color: "aqua" })};
 player.show_actionbar(&actionbar);`);
-        }
-
-        if (rustBlocks.length) {
-            blocks.push(`${hasRichJson ? "// Pumpkin WASM plain-text fallback. Use the command JSON above as the exact rich-text source.\n" : "// Pumpkin WASM output\n"}${rustBlocks.join("\n\n")}`);
         }
 
         document.querySelector("#titleCode").textContent = blocks.join("\n\n") || "// Enter a title, subtitle or actionbar text to generate code.";
