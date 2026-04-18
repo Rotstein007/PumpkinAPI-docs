@@ -1,3 +1,35 @@
+@font-face {
+    font-family: "Minecraft Preview";
+    src: url("assets/fonts/Monocraft.ttf") format("truetype");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Minecraft Preview";
+    src: url("assets/fonts/Monocraft-Bold.ttf") format("truetype");
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Minecraft Preview";
+    src: url("assets/fonts/Monocraft-Italic.ttf") format("truetype");
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Minecraft Preview";
+    src: url("assets/fonts/Monocraft-Bold-Italic.ttf") format("truetype");
+    font-style: italic;
+    font-weight: 700;
+    font-display: swap;
+}
+
 :root {
     --text: #1f2933;
     --muted: #5f6b7a;
@@ -17,6 +49,7 @@
     --code-bg: #f6f8fa;
     --code-text: #24292f;
     --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --minecraft: "Minecraft Preview", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     --sans: Verdana, Geneva, Tahoma, sans-serif;
 }
 
@@ -533,16 +566,19 @@ h3 {
     background: #1f2933;
     border: 1px solid #101820;
     border-radius: 0;
+    font-family: var(--minecraft);
 }
 
 .preview-title strong,
 .preview-title span,
 .preview-title small {
     display: block;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
 }
 
 .preview-title strong {
     font-size: 40px;
+    font-weight: 700;
     line-height: 1.1;
 }
 
@@ -555,6 +591,20 @@ h3 {
 .preview-title small {
     margin-top: 20px;
     color: #c7d1dc;
+    font-size: 13px;
+}
+
+#textPreview {
+    display: inline-block;
+    min-width: min(100%, 260px);
+    min-height: 44px;
+    margin: 4px 0 0;
+    padding: 12px 14px;
+    font-family: var(--minecraft);
+    line-height: 1.25;
+    background: #1f2933;
+    border: 1px solid #101820;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.65);
 }
 
 pre {
@@ -597,6 +647,7 @@ pre code {
     display: grid;
     place-items: center;
     color: var(--muted);
+    font-family: var(--minecraft);
     font-size: 11px;
     background: #ffffff;
     border: 1px solid var(--border-strong);
@@ -608,6 +659,7 @@ pre code {
     color: #ffffff;
     background: var(--accent);
     border-color: var(--accent-dark);
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
 }
 
 .slot.active {

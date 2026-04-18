@@ -24,6 +24,15 @@ function copyFile(file) {
     fs.copyFileSync(source, target);
 }
 
+function copyDirectory(directory) {
+    const source = path.join(root, directory);
+    if (!fs.existsSync(source)) {
+        return;
+    }
+    const target = path.join(dist, directory);
+    fs.cpSync(source, target, { recursive: true });
+}
+
 for (const file of requiredFiles) {
     if (!fs.existsSync(path.join(root, file))) {
         throw new Error(`Missing required file: ${file}`);
@@ -57,6 +66,7 @@ fs.rmSync(dist, { recursive: true, force: true });
 for (const file of requiredFiles) {
     copyFile(file);
 }
+copyDirectory("assets");
 
 console.log(`Built PumpkinAPI-docs with ${data.modules.length} API modules.`);
 console.log(`Output: ${dist}`);
