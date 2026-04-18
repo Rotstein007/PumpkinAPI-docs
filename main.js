@@ -373,12 +373,14 @@ function renderTitleTool() {
             </form>
             <div class="tool-output">
                 <div class="preview-title" id="titlePreview">
-                    <button class="preview-play" id="playTitlePreview" type="button" aria-label="Play title preview" title="Play preview"><span aria-hidden="true"></span></button>
-                    <div class="preview-title-content">
-                        <strong id="titlePreviewTitle"></strong>
-                        <span id="titlePreviewSubtitle" class="preview-subtitle"></span>
+                    <div class="preview-screen">
+                        <button class="preview-play" id="playTitlePreview" type="button" aria-label="Play title preview" title="Play preview"><span aria-hidden="true"></span></button>
+                        <div class="preview-title-content">
+                            <strong id="titlePreviewTitle"></strong>
+                            <span id="titlePreviewSubtitle" class="preview-subtitle"></span>
+                        </div>
+                        <small id="titlePreviewActionbar" class="preview-actionbar"></small>
                     </div>
-                    <small id="titlePreviewActionbar" class="preview-actionbar"></small>
                 </div>
                 <pre><code id="titleCode"></code></pre>
                 <div class="copy-row"><button class="button secondary" data-copy="titleCode">Copy code</button></div>
@@ -500,6 +502,7 @@ function renderTextTool() {
                 </div>
             </form>
             <div class="tool-output">
+                <article class="panel preview-chat-panel" aria-label="Minecraft screenshot"></article>
                 <pre><code id="textCode"></code></pre>
                 <div class="copy-row"><button class="button secondary" data-copy="textCode">Copy code</button></div>
             </div>
