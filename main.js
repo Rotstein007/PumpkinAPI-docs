@@ -24,7 +24,7 @@ function trimmedFormValue(id) {
     return readFormValue(id).trim();
 }
 
-const minecraftColors = {
+const minecraftColorHex = {
     black: "#000000",
     dark_blue: "#0000aa",
     dark_green: "#00aa00",
@@ -61,171 +61,6 @@ const pumpkinNamedColors = {
     yellow: "Yellow",
     white: "White"
 };
-
-function parseTextComponentInput(value, fallbackStyle = {}) {
-    const source = String(value || "").trim();
-    if (!source) {
-        return { source, value: "", isJson: false, segments: [], commandJson: JSON.stringify({ text: "" }) };
-    }
-
-    if (source.startsWith("{") || source.startsWith("[")) {
-        try {
-            const parsed = JSON.parse(source);
-            return {
-                source,
-                value: parsed,
-                isJson: true,
-                segments: flattenTextComponent(parsed, {}),
-                commandJson: JSON.stringify(parsed)
-            };
-        } catch {
-            return {
-                source,
-                value: source,
-                isJson: false,
-                segments: [{ text: source, ...fallbackStyle }],
-                commandJson: JSON.stringify({ text: source })
-            };
-        }
-    }
-
-    return {
-        source,
-        value: source,
-        isJson: false,
-        segments: [{ text: source, ...fallbackStyle }],
-        commandJson: JSON.stringify({ text: source })
-    };
-}
-
-function flattenTextComponent(component, inheritedStyle = {}) {
-    if (component === null || component === undefined) {
-        return [];
-    }
-
-    if (typeof component === "string" || typeof component === "number" || typeof component === "boolean") {
-        const text = String(component);
-        return text ? [{ text, ...inheritedStyle }] : [];
-    }
-
-    if (Array.isArray(component)) {
-        return component.flatMap((entry) => flattenTextComponent(entry, inheritedStyle));
-    }
-
-    if (typeof component !== "object") {
-        return [];
-    }
-
-    const ownStyle = { ...inheritedStyle };
-    ["color", "bold", "italic", "underlined", "strikethrough", "obfuscated"].forEach((key) => {
-        if (Object.prototype.hasOwnProperty.call(component, key)) {
-            ownStyle[key] = component[key];
-        }
-    });
-
-    const text = component.text ?? component.translate ?? "";
-    const segments = text ? [{ text: String(text), ...ownStyle }] : [];
-
-    if (Array.isArray(component.extra)) {
-        segments.push(...component.extra.flatMap((entry) => flattenTextComponent(entry, ownStyle)));
-    }
-
-    return segments;
-}
-
-function cssMinecraftColor(value) {
-    const color = String(value || "").toLowerCase();
-    if (minecraftColors[color]) {
-        return minecraftColors[color];
-    }
-    if (/^#[0-9a-f]{6}$/i.test(String(value || ""))) {
-        return value;
-    }
-    return "";
-}
-
-function textComponentPreviewHtml(parsedComponent) {
-    return parsedComponent.segments.map((segment) => {
-        const styles = [];
-        const decorations = [];
-        const color = cssMinecraftColor(segment.color);
-
-        if (color) {
-            styles.push(`color: ${escapeHtml(color)}`);
-        }
-        if (segment.bold) {
-            styles.push("font-weight: 700");
-        }
-        if (segment.italic) {
-            styles.push("font-style: italic");
-        }
-        if (segment.underlined) {
-            decorations.push("underline");
-        }
-        if (segment.strikethrough) {
-            decorations.push("line-through");
-        }
-        if (decorations.length) {
-            styles.push(`text-decoration: ${decorations.join(" ")}`);
-        }
-
-        const className = segment.obfuscated ? " class=\"minecraft-obfuscated\"" : "";
-        const styleAttr = styles.length ? ` style="${styles.join("; ")}"` : "";
-        const text = segment.obfuscated ? "█".repeat(Math.max(1, segment.text.length)) : segment.text;
-        return `<span${className}${styleAttr}>${escapeHtml(text)}</span>`;
-    }).join("");
-}
-
-function rustStyleChain(segment) {
-    const lines = [];
-    const colorName = pumpkinNamedColors[String(segment.color || "").toLowerCase()];
-    const rgb = /^#[0-9a-f]{6}$/i.test(String(segment.color || "")) ? String(segment.color).slice(1) : "";
-
-    if (colorName) {
-        lines.push(`    .color_named(common::NamedColor::${colorName})`);
-    } else if (rgb) {
-        lines.push(`    .color_rgb(common::RgbColor { r: 0x${rgb.slice(0, 2)}, g: 0x${rgb.slice(2, 4)}, b: 0x${rgb.slice(4, 6)} })`);
-    }
-    if (segment.bold) {
-        lines.push("    .bold(true)");
-    }
-    if (segment.italic) {
-        lines.push("    .italic(true)");
-    }
-    if (segment.underlined) {
-        lines.push("    .underlined(true)");
-    }
-    if (segment.strikethrough) {
-        lines.push("    .strikethrough(true)");
-    }
-    if (segment.obfuscated) {
-        lines.push("    .obfuscated(true)");
-    }
-
-    return lines;
-}
-
-function rustTextComponentExpression(parsedComponent, fallbackStyle = {}) {
-    const segments = parsedComponent.segments.length
-        ? parsedComponent.segments
-        : [{ text: "", ...fallbackStyle }];
-
-    const componentForSegment = (segment) => {
-        const chain = [`TextComponent::text(${rustString(segment.text)})`, ...rustStyleChain(segment)];
-        return chain.join("\n");
-    };
-
-    if (segments.length === 1) {
-        return componentForSegment(segments[0]);
-    }
-
-    return [
-        "TextComponent::text(\"\")",
-        ...segments.map((segment) => {
-            return `    .add_child(\n${componentForSegment(segment).split("\n").map((line) => `        ${line}`).join("\n")}\n    )`;
-        })
-    ].join("\n");
-}
 
 function rustMethod(name) {
     return String(name)
@@ -525,9 +360,9 @@ function renderTitleTool() {
                 <p class="eyebrow">player + text-component</p>
                 <h2>Title Generator</h2>
                 <div class="field-grid">
-                    <label class="field full">Title text or JSON component <textarea id="titleText">Welcome to Pumpkin</textarea></label>
-                    <label class="field full">Subtitle text or JSON component <textarea id="subtitleText">WASM plugins are live</textarea></label>
-                    <label class="field full">Actionbar text or JSON component <textarea id="actionbarText">Generated with pumpkin.api.rotstein.dev</textarea></label>
+                    <label class="field full">Title <input id="titleText" value="Welcome to Pumpkin"></label>
+                    <label class="field full">Subtitle <input id="subtitleText" value="WASM plugins are live"></label>
+                    <label class="field full">Actionbar <input id="actionbarText" value="Generated with pumpkin.api.rotstein.dev"></label>
                     <label class="field">Fade in ticks <input id="fadeIn" type="number" value="10" min="0"></label>
                     <label class="field">Stay ticks <input id="stay" type="number" value="60" min="0"></label>
                     <label class="field">Fade out ticks <input id="fadeOut" type="number" value="20" min="0"></label>
@@ -535,7 +370,6 @@ function renderTitleTool() {
                         ${Object.entries(pumpkinNamedColors).map(([key]) => `<option value="${key}" ${key === "gold" ? "selected" : ""}>${key}</option>`).join("")}
                     </select></label>
                 </div>
-                <p class="form-hint">Plain text works. For multiple colors or styles, paste Minecraft JSON text components like <code>["",{"text":"Mi"},{"text":"e","italic":true,"color":"red"}]</code>. The generator outputs WASM Rust only.</p>
             </form>
             <div class="tool-output">
                 <div class="preview-title" id="titlePreview">
@@ -565,16 +399,14 @@ function renderTitleTool() {
         const fadeIn = Math.max(0, Number(readFormValue("fadeIn") || 0));
         const stay = Math.max(0, Number(readFormValue("stay") || 0));
         const fadeOut = Math.max(0, Number(readFormValue("fadeOut") || 0));
-        const titleComponent = parseTextComponentInput(title, { color, bold: true });
-        const subtitleComponent = parseTextComponentInput(subtitle, { color: "white" });
-        const actionbarComponent = parseTextComponentInput(actionbar, { color: "aqua" });
         fadeInMs = fadeIn * 50;
         stayMs = stay * 50;
         fadeOutMs = fadeOut * 50;
 
-        document.querySelector("#titlePreviewTitle").innerHTML = textComponentPreviewHtml(titleComponent);
-        document.querySelector("#titlePreviewSubtitle").innerHTML = textComponentPreviewHtml(subtitleComponent);
-        document.querySelector("#titlePreviewActionbar").innerHTML = textComponentPreviewHtml(actionbarComponent);
+        document.querySelector("#titlePreviewTitle").textContent = title;
+        document.querySelector("#titlePreviewTitle").style.color = minecraftColorHex[color] || minecraftColorHex.gold;
+        document.querySelector("#titlePreviewSubtitle").textContent = subtitle;
+        document.querySelector("#titlePreviewActionbar").textContent = actionbar;
         const blocks = [];
 
         if (title || subtitle || actionbar) {
@@ -586,17 +418,21 @@ function renderTitleTool() {
         }
 
         if (title) {
-            blocks.push(`let title = ${rustTextComponentExpression(titleComponent, { color, bold: true })};
+            blocks.push(`let title = TextComponent::text(${rustString(title)})
+    .color_named(common::NamedColor::${pumpkinNamedColors[color] || "Gold"})
+    .bold(true);
 player.show_title(&title);`);
         }
 
         if (subtitle) {
-            blocks.push(`let subtitle = ${rustTextComponentExpression(subtitleComponent, { color: "white" })};
+            blocks.push(`let subtitle = TextComponent::text(${rustString(subtitle)})
+    .color_named(common::NamedColor::White);
 player.show_subtitle(&subtitle);`);
         }
 
         if (actionbar) {
-            blocks.push(`let actionbar = ${rustTextComponentExpression(actionbarComponent, { color: "aqua" })};
+            blocks.push(`let actionbar = TextComponent::text(${rustString(actionbar)})
+    .color_named(common::NamedColor::Aqua);
 player.show_actionbar(&actionbar);`);
         }
 
