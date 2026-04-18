@@ -557,13 +557,15 @@ h3 {
 
 .preview-title {
     display: grid;
-    min-height: 168px;
+    min-height: 220px;
     place-items: center;
     margin-bottom: 16px;
     padding: 24px;
     color: #ffffff;
     text-align: center;
-    background: #1f2933;
+    background:
+        linear-gradient(rgba(15, 23, 42, 0.2), rgba(15, 23, 42, 0.45)),
+        url("assets/images/minecraft-preview-background.png") center / cover;
     border: 1px solid #101820;
     border-radius: 0;
     font-family: var(--minecraft);
@@ -594,6 +596,22 @@ h3 {
     font-size: 13px;
 }
 
+.preview-chat-panel {
+    min-height: 168px;
+    margin-bottom: 16px;
+    color: #ffffff;
+    background:
+        linear-gradient(rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.5)),
+        url("assets/images/minecraft-preview-background.png") center / cover;
+    border-color: #101820;
+    box-shadow: none;
+}
+
+.preview-chat-panel h3 {
+    color: #ffffff;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.65);
+}
+
 #textPreview {
     display: inline-block;
     min-width: min(100%, 260px);
@@ -602,8 +620,8 @@ h3 {
     padding: 12px 14px;
     font-family: var(--minecraft);
     line-height: 1.25;
-    background: #1f2933;
-    border: 1px solid #101820;
+    background: rgba(31, 41, 51, 0.76);
+    border: 1px solid rgba(16, 24, 32, 0.88);
     text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.65);
 }
 

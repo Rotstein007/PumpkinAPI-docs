@@ -427,7 +427,7 @@ function renderTextTool() {
                 </div>
             </form>
             <div class="tool-output">
-                <article class="panel" style="box-shadow: none; margin-bottom: 16px;">
+                <article class="panel preview-chat-panel">
                     <h3>Preview</h3>
                     <p id="textPreview"></p>
                 </article>
