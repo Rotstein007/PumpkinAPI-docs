@@ -540,6 +540,13 @@ h3 {
     resize: vertical;
 }
 
+.form-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
 .check-row {
     display: flex;
     flex-wrap: wrap;
@@ -578,7 +585,6 @@ h3 {
     border-radius: 0;
     font-family: var(--minecraft);
     isolation: isolate;
-    --preview-duration: 4500ms;
 }
 
 .preview-title::after {
@@ -595,10 +601,16 @@ h3 {
 }
 
 .preview-title strong,
-.preview-title span,
-.preview-title small {
+.preview-subtitle,
+.preview-actionbar {
     display: block;
     text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
+}
+
+.preview-title strong span,
+.preview-subtitle span,
+.preview-actionbar span {
+    display: inline;
 }
 
 .preview-title strong {
@@ -607,24 +619,20 @@ h3 {
     line-height: 1.1;
 }
 
-.preview-title span {
+.preview-subtitle {
     margin-top: 10px;
     color: #d7f4e8;
     font-size: 19px;
 }
 
-.preview-title small {
-    margin-top: 20px;
+.preview-actionbar {
+    position: absolute;
+    right: 24px;
+    bottom: clamp(40px, 12%, 88px);
+    left: 24px;
     color: #c7d1dc;
     font-size: 13px;
-}
-
-.preview-title.is-playing .preview-title-content {
-    animation: minecraft-title-preview var(--preview-duration) ease-in-out both;
-}
-
-.preview-title.is-playing .preview-title small {
-    animation: minecraft-actionbar-preview var(--preview-duration) ease-in-out both;
+    line-height: 1.25;
 }
 
 .preview-play {
@@ -664,41 +672,8 @@ h3 {
     outline-offset: 2px;
 }
 
-@keyframes minecraft-title-preview {
-    0% {
-        opacity: 0;
-        transform: scale(0.92);
-    }
-
-    18%,
-    72% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    100% {
-        opacity: 0;
-        transform: scale(1.03);
-    }
-}
-
-@keyframes minecraft-actionbar-preview {
-    0%,
-    10% {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-
-    22%,
-    82% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    100% {
-        opacity: 0;
-        transform: translateY(8px);
-    }
+.minecraft-obfuscated {
+    letter-spacing: 0.08em;
 }
 
 .preview-chat-panel {

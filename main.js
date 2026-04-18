@@ -24,6 +24,158 @@ function trimmedFormValue(id) {
     return readFormValue(id).trim();
 }
 
+const minecraftColors = {
+    black: "#000000",
+    dark_blue: "#0000aa",
+    dark_green: "#00aa00",
+    dark_aqua: "#00aaaa",
+    dark_red: "#aa0000",
+    dark_purple: "#aa00aa",
+    gold: "#ffaa00",
+    gray: "#aaaaaa",
+    dark_gray: "#555555",
+    blue: "#5555ff",
+    green: "#55ff55",
+    aqua: "#55ffff",
+    red: "#ff5555",
+    light_purple: "#ff55ff",
+    yellow: "#ffff55",
+    white: "#ffffff"
+};
+
+const pumpkinNamedColors = {
+    black: "Black",
+    dark_blue: "DarkBlue",
+    dark_green: "DarkGreen",
+    dark_aqua: "DarkAqua",
+    dark_red: "DarkRed",
+    dark_purple: "DarkPurple",
+    gold: "Gold",
+    gray: "Gray",
+    dark_gray: "DarkGray",
+    blue: "Blue",
+    green: "Green",
+    aqua: "Aqua",
+    red: "Red",
+    light_purple: "LightPurple",
+    yellow: "Yellow",
+    white: "White"
+};
+
+function parseTextComponentInput(value, fallbackStyle = {}) {
+    const source = String(value || "").trim();
+    if (!source) {
+        return { source, value: "", isJson: false, segments: [], commandJson: JSON.stringify({ text: "" }) };
+    }
+
+    if (source.startsWith("{") || source.startsWith("[")) {
+        try {
+            const parsed = JSON.parse(source);
+            return {
+                source,
+                value: parsed,
+                isJson: true,
+                segments: flattenTextComponent(parsed, {}),
+                commandJson: JSON.stringify(parsed)
+            };
+        } catch {
+            return {
+                source,
+                value: source,
+                isJson: false,
+                segments: [{ text: source, ...fallbackStyle }],
+                commandJson: JSON.stringify({ text: source })
+            };
+        }
+    }
+
+    return {
+        source,
+        value: source,
+        isJson: false,
+        segments: [{ text: source, ...fallbackStyle }],
+        commandJson: JSON.stringify({ text: source })
+    };
+}
+
+function flattenTextComponent(component, inheritedStyle = {}) {
+    if (component === null || component === undefined) {
+        return [];
+    }
+
+    if (typeof component === "string" || typeof component === "number" || typeof component === "boolean") {
+        const text = String(component);
+        return text ? [{ text, ...inheritedStyle }] : [];
+    }
+
+    if (Array.isArray(component)) {
+        return component.flatMap((entry) => flattenTextComponent(entry, inheritedStyle));
+    }
+
+    if (typeof component !== "object") {
+        return [];
+    }
+
+    const ownStyle = { ...inheritedStyle };
+    ["color", "bold", "italic", "underlined", "strikethrough", "obfuscated"].forEach((key) => {
+        if (Object.prototype.hasOwnProperty.call(component, key)) {
+            ownStyle[key] = component[key];
+        }
+    });
+
+    const text = component.text ?? component.translate ?? "";
+    const segments = text ? [{ text: String(text), ...ownStyle }] : [];
+
+    if (Array.isArray(component.extra)) {
+        segments.push(...component.extra.flatMap((entry) => flattenTextComponent(entry, ownStyle)));
+    }
+
+    return segments;
+}
+
+function cssMinecraftColor(value) {
+    const color = String(value || "").toLowerCase();
+    if (minecraftColors[color]) {
+        return minecraftColors[color];
+    }
+    if (/^#[0-9a-f]{6}$/i.test(String(value || ""))) {
+        return value;
+    }
+    return "";
+}
+
+function textComponentPreviewHtml(parsedComponent) {
+    return parsedComponent.segments.map((segment) => {
+        const styles = [];
+        const decorations = [];
+        const color = cssMinecraftColor(segment.color);
+
+        if (color) {
+            styles.push(`color: ${escapeHtml(color)}`);
+        }
+        if (segment.bold) {
+            styles.push("font-weight: 700");
+        }
+        if (segment.italic) {
+            styles.push("font-style: italic");
+        }
+        if (segment.underlined) {
+            decorations.push("underline");
+        }
+        if (segment.strikethrough) {
+            decorations.push("line-through");
+        }
+        if (decorations.length) {
+            styles.push(`text-decoration: ${decorations.join(" ")}`);
+        }
+
+        const className = segment.obfuscated ? " class=\"minecraft-obfuscated\"" : "";
+        const styleAttr = styles.length ? ` style="${styles.join("; ")}"` : "";
+        const text = segment.obfuscated ? "█".repeat(Math.max(1, segment.text.length)) : segment.text;
+        return `<span${className}${styleAttr}>${escapeHtml(text)}</span>`;
+    }).join("");
+}
+
 function rustMethod(name) {
     return String(name)
         .replace(/\(.*/, "")
@@ -322,29 +474,27 @@ function renderTitleTool() {
                 <p class="eyebrow">player + text-component</p>
                 <h2>Title Generator</h2>
                 <div class="field-grid">
-                    <label class="field full">Title <input id="titleText" value="Welcome to Pumpkin"></label>
-                    <label class="field full">Subtitle <input id="subtitleText" value="WASM plugins are live"></label>
-                    <label class="field full">Actionbar <input id="actionbarText" value="Generated with pumpkin.api.rotstein.dev"></label>
+                    <label class="field full">Title text or JSON component <textarea id="titleText">Welcome to Pumpkin</textarea></label>
+                    <label class="field full">Subtitle text or JSON component <textarea id="subtitleText">WASM plugins are live</textarea></label>
+                    <label class="field full">Actionbar text or JSON component <textarea id="actionbarText">Generated with pumpkin.api.rotstein.dev</textarea></label>
                     <label class="field">Fade in ticks <input id="fadeIn" type="number" value="10" min="0"></label>
                     <label class="field">Stay ticks <input id="stay" type="number" value="60" min="0"></label>
                     <label class="field">Fade out ticks <input id="fadeOut" type="number" value="20" min="0"></label>
-                    <label class="field">Color <select id="titleColor">
-                        <option value="Gold">gold</option>
-                        <option value="Green">green</option>
-                        <option value="Aqua">aqua</option>
-                        <option value="Red">red</option>
-                        <option value="White">white</option>
+                    <label class="field">Plain title color <select id="titleColor">
+                        ${Object.entries(pumpkinNamedColors).map(([key]) => `<option value="${key}" ${key === "gold" ? "selected" : ""}>${key}</option>`).join("")}
                     </select></label>
+                    <label class="field">Command target <input id="titleTarget" value="@a"></label>
                 </div>
+                <p class="form-hint">Plain text works. For multiple colors or styles, paste Minecraft JSON text components like <code>["",{"text":"Mi"},{"text":"e","italic":true,"color":"red"}]</code>.</p>
             </form>
             <div class="tool-output">
                 <div class="preview-title" id="titlePreview">
                     <button class="preview-play" id="playTitlePreview" type="button" aria-label="Play title preview" title="Play preview"><span aria-hidden="true"></span></button>
                     <div class="preview-title-content">
                         <strong id="titlePreviewTitle"></strong>
-                        <span id="titlePreviewSubtitle"></span>
-                        <small id="titlePreviewActionbar"></small>
+                        <span id="titlePreviewSubtitle" class="preview-subtitle"></span>
                     </div>
+                    <small id="titlePreviewActionbar" class="preview-actionbar"></small>
                 </div>
                 <pre><code id="titleCode"></code></pre>
                 <div class="copy-row"><button class="button secondary" data-copy="titleCode">Copy code</button></div>
@@ -352,68 +502,112 @@ function renderTitleTool() {
         </section>
     `;
 
-    let previewTimeout = null;
-    let previewDurationMs = 4500;
+    let activeTitleAnimations = [];
+    let fadeInMs = 500;
+    let stayMs = 3000;
+    let fadeOutMs = 1000;
 
     const update = () => {
         const title = trimmedFormValue("titleText");
         const subtitle = trimmedFormValue("subtitleText");
         const actionbar = trimmedFormValue("actionbarText");
         const color = readFormValue("titleColor");
-        const fadeIn = Number(readFormValue("fadeIn") || 0);
-        const stay = Number(readFormValue("stay") || 0);
-        const fadeOut = Number(readFormValue("fadeOut") || 0);
-        const preview = document.querySelector("#titlePreview");
-        const totalTicks = Math.max(8, fadeIn + stay + fadeOut);
-        previewDurationMs = totalTicks * 50;
+        const target = trimmedFormValue("titleTarget") || "@a";
+        const fadeIn = Math.max(0, Number(readFormValue("fadeIn") || 0));
+        const stay = Math.max(0, Number(readFormValue("stay") || 0));
+        const fadeOut = Math.max(0, Number(readFormValue("fadeOut") || 0));
+        const titleComponent = parseTextComponentInput(title, { color, bold: true });
+        const subtitleComponent = parseTextComponentInput(subtitle, { color: "white" });
+        const actionbarComponent = parseTextComponentInput(actionbar, { color: "aqua" });
+        fadeInMs = fadeIn * 50;
+        stayMs = stay * 50;
+        fadeOutMs = fadeOut * 50;
 
-        document.querySelector("#titlePreviewTitle").textContent = title;
-        document.querySelector("#titlePreviewSubtitle").textContent = subtitle;
-        document.querySelector("#titlePreviewActionbar").textContent = actionbar;
-        preview.style.setProperty("--preview-duration", `${previewDurationMs}ms`);
+        document.querySelector("#titlePreviewTitle").innerHTML = textComponentPreviewHtml(titleComponent);
+        document.querySelector("#titlePreviewSubtitle").innerHTML = textComponentPreviewHtml(subtitleComponent);
+        document.querySelector("#titlePreviewActionbar").innerHTML = textComponentPreviewHtml(actionbarComponent);
         const blocks = [];
 
         if (title || subtitle || actionbar) {
-            blocks.push("use pumpkin_plugin_api::{common, text::TextComponent};");
-        }
-
-        if (title || subtitle) {
-            blocks.push(`player.send_title_animation(${fadeIn}, ${stay}, ${fadeOut});`);
+            blocks.push(`// Minecraft command output
+/title ${target} times ${fadeIn} ${stay} ${fadeOut}`);
         }
 
         if (title) {
-            blocks.push(`let title = TextComponent::text(${rustString(title)})
-    .color_named(common::NamedColor::${color})
+            blocks.push(`/title ${target} title ${titleComponent.commandJson}`);
+        }
+
+        if (subtitle) {
+            blocks.push(`/title ${target} subtitle ${subtitleComponent.commandJson}`);
+        }
+
+        if (actionbar) {
+            blocks.push(`/title ${target} actionbar ${actionbarComponent.commandJson}`);
+        }
+
+        const hasRichJson = titleComponent.isJson || subtitleComponent.isJson || actionbarComponent.isJson;
+        const rustBlocks = [];
+
+        if (title || subtitle || actionbar) {
+            rustBlocks.push("use pumpkin_plugin_api::{common, text::TextComponent};");
+        }
+
+        if (title || subtitle) {
+            rustBlocks.push(`player.send_title_animation(${fadeIn}, ${stay}, ${fadeOut});`);
+        }
+
+        if (title) {
+            rustBlocks.push(`let title = TextComponent::text(${rustString(titleComponent.segments.map((segment) => segment.text).join(""))})
+    .color_named(common::NamedColor::${pumpkinNamedColors[color] || "Gold"})
     .bold(true);
 player.show_title(&title);`);
         }
 
         if (subtitle) {
-            blocks.push(`let subtitle = TextComponent::text(${rustString(subtitle)})
+            rustBlocks.push(`let subtitle = TextComponent::text(${rustString(subtitleComponent.segments.map((segment) => segment.text).join(""))})
     .color_named(common::NamedColor::White);
 player.show_subtitle(&subtitle);`);
         }
 
         if (actionbar) {
-            blocks.push(`let actionbar = TextComponent::text(${rustString(actionbar)})
+            rustBlocks.push(`let actionbar = TextComponent::text(${rustString(actionbarComponent.segments.map((segment) => segment.text).join(""))})
     .color_named(common::NamedColor::Aqua);
 player.show_actionbar(&actionbar);`);
+        }
+
+        if (rustBlocks.length) {
+            blocks.push(`${hasRichJson ? "// Pumpkin WASM plain-text fallback. Use the command JSON above as the exact rich-text source.\n" : "// Pumpkin WASM output\n"}${rustBlocks.join("\n\n")}`);
         }
 
         document.querySelector("#titleCode").textContent = blocks.join("\n\n") || "// Enter a title, subtitle or actionbar text to generate code.";
     };
 
     const playPreview = () => {
-        const preview = document.querySelector("#titlePreview");
-        if (previewTimeout) {
-            window.clearTimeout(previewTimeout);
-        }
-        preview.classList.remove("is-playing");
-        void preview.offsetWidth;
-        preview.classList.add("is-playing");
-        previewTimeout = window.setTimeout(() => {
-            preview.classList.remove("is-playing");
-        }, previewDurationMs);
+        activeTitleAnimations.forEach((animation) => animation.cancel());
+        activeTitleAnimations = [];
+
+        const totalMs = Math.max(1, fadeInMs + stayMs + fadeOutMs);
+        const fadeInOffset = fadeInMs / totalMs;
+        const stayOffset = (fadeInMs + stayMs) / totalMs;
+        const frames = [
+            { opacity: 0, offset: 0 },
+            { opacity: 1, offset: fadeInOffset },
+            { opacity: 1, offset: stayOffset },
+            { opacity: 0, offset: 1 }
+        ].sort((left, right) => left.offset - right.offset);
+
+        document.querySelectorAll("#titlePreview .preview-title-content, #titlePreview .preview-actionbar").forEach((element) => {
+            const animation = element.animate(frames, {
+                duration: totalMs,
+                easing: "linear",
+                fill: "both"
+            });
+            activeTitleAnimations.push(animation);
+            animation.finished.then(() => {
+                animation.cancel();
+                activeTitleAnimations = activeTitleAnimations.filter((current) => current !== animation);
+            }).catch(() => {});
+        });
     };
 
     app.querySelector("#titleForm").addEventListener("input", update);
