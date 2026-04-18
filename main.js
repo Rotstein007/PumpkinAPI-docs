@@ -500,10 +500,6 @@ function renderTextTool() {
                 </div>
             </form>
             <div class="tool-output">
-                <article class="panel preview-chat-panel">
-                    <h3>Preview</h3>
-                    <p id="textPreview"></p>
-                </article>
                 <pre><code id="textCode"></code></pre>
                 <div class="copy-row"><button class="button secondary" data-copy="textCode">Copy code</button></div>
             </div>
@@ -528,13 +524,6 @@ function renderTextTool() {
             url: "click_open_url",
             copy: "click_copy_to_clipboard"
         }[clickKind];
-
-        const preview = document.querySelector("#textPreview");
-        preview.textContent = text;
-        preview.style.color = `#${hex || "04aa6d"}`;
-        preview.style.fontWeight = bold ? "700" : "400";
-        preview.style.fontStyle = italic ? "italic" : "normal";
-        preview.style.textDecoration = underlined ? "underline" : "none";
 
         const imports = ["use pumpkin_plugin_api::text::TextComponent;"];
         const chain = [`let component = TextComponent::text(${rustString(text || "Text")})`];
