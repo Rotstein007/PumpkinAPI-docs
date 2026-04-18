@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pumpkin WASM API Docs</title>
+    <meta name="description" content="Documentation and generators for the Pumpkin WASM plugin API.">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="#tools" data-route="tools">
+            <strong>PumpkinAPI</strong>
+        </a>
+
+        <label class="search">
+            <span>Search</span>
+            <input id="searchInput" type="search" placeholder="player.teleport, title, event..." autocomplete="off">
+        </label>
+
+        <div class="sidebar-section">
+            <p class="section-label">Tools</p>
+            <a href="#tool-title" data-route="tool-title">Title Generator</a>
+            <a href="#tool-text" data-route="tool-text">TextComponent Generator</a>
+            <a href="#tool-gui" data-route="tool-gui">GUI Layout Generator</a>
+            <a href="#tool-abilities" data-route="tool-abilities">Player Ability Generator</a>
+        </div>
+
+        <div class="sidebar-section">
+            <p class="section-label">API Calls</p>
+            <div id="apiModuleNav"></div>
+        </div>
+    </aside>
+
+    <main>
+        <header class="topbar">
+            <nav id="breadcrumb" class="breadcrumb" aria-label="Breadcrumb"></nav>
+        </header>
+
+        <section id="app" class="content" aria-live="polite"></section>
+    </main>
+</div>
+
+<script src="data/api-data.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
