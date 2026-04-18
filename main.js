@@ -338,8 +338,9 @@ function renderTitleTool() {
                 </div>
             </form>
             <div class="tool-output">
-                <div class="preview-title">
-                    <div>
+                <div class="preview-title" id="titlePreview">
+                    <button class="preview-replay" id="replayTitlePreview" type="button" aria-label="Replay title preview" title="Replay preview">&#8635;</button>
+                    <div class="preview-title-content">
                         <strong id="titlePreviewTitle"></strong>
                         <span id="titlePreviewSubtitle"></span>
                         <small id="titlePreviewActionbar"></small>
@@ -359,10 +360,13 @@ function renderTitleTool() {
         const fadeIn = Number(readFormValue("fadeIn") || 0);
         const stay = Number(readFormValue("stay") || 0);
         const fadeOut = Number(readFormValue("fadeOut") || 0);
+        const preview = document.querySelector("#titlePreview");
+        const totalTicks = Math.max(8, fadeIn + stay + fadeOut);
 
         document.querySelector("#titlePreviewTitle").textContent = title;
         document.querySelector("#titlePreviewSubtitle").textContent = subtitle;
         document.querySelector("#titlePreviewActionbar").textContent = actionbar;
+        preview.style.setProperty("--preview-duration", `${totalTicks * 50}ms`);
         const blocks = [];
 
         if (title || subtitle || actionbar) {
@@ -395,8 +399,20 @@ player.show_actionbar(&actionbar);`);
         document.querySelector("#titleCode").textContent = blocks.join("\n\n") || "// Enter a title, subtitle or actionbar text to generate code.";
     };
 
-    app.querySelector("#titleForm").addEventListener("input", update);
+    const replayPreview = () => {
+        const preview = document.querySelector("#titlePreview");
+        preview.classList.remove("is-playing");
+        void preview.offsetWidth;
+        preview.classList.add("is-playing");
+    };
+
+    app.querySelector("#titleForm").addEventListener("input", () => {
+        update();
+        replayPreview();
+    });
+    app.querySelector("#replayTitlePreview").addEventListener("click", replayPreview);
     update();
+    replayPreview();
 }
 
 function renderTextTool() {
