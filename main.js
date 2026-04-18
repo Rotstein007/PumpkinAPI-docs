@@ -324,7 +324,7 @@ function renderTitleTool() {
                 <div class="field-grid">
                     <label class="field full">Title <input id="titleText" value="Welcome to Pumpkin"></label>
                     <label class="field full">Subtitle <input id="subtitleText" value="WASM plugins are live"></label>
-                    <label class="field full">Actionbar <input id="actionbarText" value="Generated with PumpkinAPI-docs"></label>
+                    <label class="field full">Actionbar <input id="actionbarText" value="Generated with pumpkin.api.rotstein.dev"></label>
                     <label class="field">Fade in ticks <input id="fadeIn" type="number" value="10" min="0"></label>
                     <label class="field">Stay ticks <input id="stay" type="number" value="60" min="0"></label>
                     <label class="field">Fade out ticks <input id="fadeOut" type="number" value="20" min="0"></label>
