@@ -20,6 +20,10 @@ function rustString(value) {
     return JSON.stringify(String(value));
 }
 
+function trimmedFormValue(id) {
+    return readFormValue(id).trim();
+}
+
 function rustMethod(name) {
     return String(name)
         .replace(/\(.*/, "")
@@ -348,9 +352,9 @@ function renderTitleTool() {
     `;
 
     const update = () => {
-        const title = readFormValue("titleText");
-        const subtitle = readFormValue("subtitleText");
-        const actionbar = readFormValue("actionbarText");
+        const title = trimmedFormValue("titleText");
+        const subtitle = trimmedFormValue("subtitleText");
+        const actionbar = trimmedFormValue("actionbarText");
         const color = readFormValue("titleColor");
         const fadeIn = Number(readFormValue("fadeIn") || 0);
         const stay = Number(readFormValue("stay") || 0);
@@ -359,22 +363,36 @@ function renderTitleTool() {
         document.querySelector("#titlePreviewTitle").textContent = title;
         document.querySelector("#titlePreviewSubtitle").textContent = subtitle;
         document.querySelector("#titlePreviewActionbar").textContent = actionbar;
-        document.querySelector("#titleCode").textContent = `use pumpkin_plugin_api::{common, text::TextComponent};
+        const blocks = [];
 
-player.send_title_animation(${fadeIn}, ${stay}, ${fadeOut});
+        if (title || subtitle || actionbar) {
+            blocks.push("use pumpkin_plugin_api::{common, text::TextComponent};");
+        }
 
-let title = TextComponent::text(${rustString(title)})
+        if (title || subtitle) {
+            blocks.push(`player.send_title_animation(${fadeIn}, ${stay}, ${fadeOut});`);
+        }
+
+        if (title) {
+            blocks.push(`let title = TextComponent::text(${rustString(title)})
     .color_named(common::NamedColor::${color})
     .bold(true);
-player.show_title(&title);
+player.show_title(&title);`);
+        }
 
-let subtitle = TextComponent::text(${rustString(subtitle)})
+        if (subtitle) {
+            blocks.push(`let subtitle = TextComponent::text(${rustString(subtitle)})
     .color_named(common::NamedColor::White);
-player.show_subtitle(&subtitle);
+player.show_subtitle(&subtitle);`);
+        }
 
-let actionbar = TextComponent::text(${rustString(actionbar)})
+        if (actionbar) {
+            blocks.push(`let actionbar = TextComponent::text(${rustString(actionbar)})
     .color_named(common::NamedColor::Aqua);
-player.show_actionbar(&actionbar);`;
+player.show_actionbar(&actionbar);`);
+        }
+
+        document.querySelector("#titleCode").textContent = blocks.join("\n\n") || "// Enter a title, subtitle or actionbar text to generate code.";
     };
 
     app.querySelector("#titleForm").addEventListener("input", update);
@@ -420,14 +438,14 @@ function renderTextTool() {
     `;
 
     const update = () => {
-        const text = readFormValue("componentText");
-        const hex = readFormValue("componentColor").replace("#", "");
+        const text = trimmedFormValue("componentText");
+        const hex = trimmedFormValue("componentColor").replace("#", "");
         const r = parseInt(hex.slice(0, 2) || "04", 16);
         const g = parseInt(hex.slice(2, 4) || "aa", 16);
         const b = parseInt(hex.slice(4, 6) || "6d", 16);
         const clickKind = readFormValue("clickKind");
-        const clickValue = readFormValue("clickValue");
-        const hover = readFormValue("hoverText");
+        const clickValue = trimmedFormValue("clickValue");
+        const hover = trimmedFormValue("hoverText");
         const bold = document.getElementById("bold").checked;
         const italic = document.getElementById("italic").checked;
         const underlined = document.getElementById("underlined").checked;
@@ -445,19 +463,38 @@ function renderTextTool() {
         preview.style.fontStyle = italic ? "italic" : "normal";
         preview.style.textDecoration = underlined ? "underline" : "none";
 
-        document.querySelector("#textCode").textContent = `use pumpkin_plugin_api::{common, text::TextComponent};
+        const imports = ["use pumpkin_plugin_api::text::TextComponent;"];
+        const chain = [`let component = TextComponent::text(${rustString(text || "Text")})`];
 
-let hover = TextComponent::text(${rustString(hover)});
+        if (hex) {
+            imports[0] = "use pumpkin_plugin_api::{common, text::TextComponent};";
+            chain.push(`    .color_rgb(common::RgbColor { r: ${r || 0}, g: ${g || 0}, b: ${b || 0} })`);
+        }
 
-let component = TextComponent::text(${rustString(text)})
-    .color_rgb(common::RgbColor { r: ${r || 0}, g: ${g || 0}, b: ${b || 0} })
-    .bold(${bold})
-    .italic(${italic})
-    .underlined(${underlined})
-    .hover_show_text(&hover)
-    .${clickMethod}(${rustString(clickValue)});
+        if (bold) {
+            chain.push("    .bold(true)");
+        }
+        if (italic) {
+            chain.push("    .italic(true)");
+        }
+        if (underlined) {
+            chain.push("    .underlined(true)");
+        }
+        if (hover) {
+            chain.push("    .hover_show_text(&hover)");
+        }
+        if (clickValue) {
+            chain.push(`    .${clickMethod}(${rustString(clickValue)})`);
+        }
 
-sender.send_message(&component);`;
+        const blocks = [...imports];
+        if (hover) {
+            blocks.push(`let hover = TextComponent::text(${rustString(hover)});`);
+        }
+        blocks.push(`${chain.join("\n")};`);
+        blocks.push("sender.send_message(&component);");
+
+        document.querySelector("#textCode").textContent = blocks.join("\n\n");
     };
 
     app.querySelector("#textForm").addEventListener("input", update);
@@ -545,8 +582,14 @@ player.open_gui(&gui);`;
     };
 
     document.querySelector("#setSlot").addEventListener("click", () => {
+        const item = trimmedFormValue("slotItem");
+        if (!item) {
+            guiSlots.delete(Number(readFormValue("activeSlot")));
+            draw();
+            return;
+        }
         guiSlots.set(Number(readFormValue("activeSlot")), {
-            item: readFormValue("slotItem"),
+            item,
             count: Number(readFormValue("slotCount") || 1)
         });
         draw();
@@ -590,18 +633,29 @@ function renderAbilitiesTool() {
     `;
 
     const update = () => {
-        const flySpeed = Number(readFormValue("flySpeed") || 0);
-        const walkSpeed = Number(readFormValue("walkSpeed") || 0);
+        const flySpeedRaw = trimmedFormValue("flySpeed");
+        const walkSpeedRaw = trimmedFormValue("walkSpeed");
+        const flySpeed = Number(flySpeedRaw || 0);
+        const walkSpeed = Number(walkSpeedRaw || 0);
         const allowFlying = document.getElementById("allowFlying").checked;
         const setFlying = document.getElementById("setFlying").checked;
         const invulnerable = document.getElementById("invulnerable").checked;
 
-        document.querySelector("#abilityCode").textContent = `let mut abilities = player.get_abilities();
-abilities.allow_flying = ${allowFlying};
-abilities.flying = ${setFlying};
-abilities.invulnerable = ${invulnerable};
-abilities.fly_speed = ${flySpeed.toFixed(2)};
-abilities.walk_speed = ${walkSpeed.toFixed(2)};
+        const lines = [
+            "let mut abilities = player.get_abilities();",
+            `abilities.allow_flying = ${allowFlying};`,
+            `abilities.flying = ${setFlying};`,
+            `abilities.invulnerable = ${invulnerable};`
+        ];
+
+        if (flySpeedRaw) {
+            lines.push(`abilities.fly_speed = ${flySpeed.toFixed(2)};`);
+        }
+        if (walkSpeedRaw) {
+            lines.push(`abilities.walk_speed = ${walkSpeed.toFixed(2)};`);
+        }
+
+        document.querySelector("#abilityCode").textContent = `${lines.join("\n")}
 
 player.set_abilities(abilities);
 player.set_flying(${setFlying});`;
