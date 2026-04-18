@@ -563,15 +563,15 @@ h3 {
     position: relative;
     display: grid;
     aspect-ratio: 16 / 9;
-    min-height: 340px;
+    min-height: 460px;
     place-items: center;
     margin-bottom: 16px;
     padding: 24px;
     overflow: hidden;
     color: #ffffff;
     text-align: center;
-    background: url("assets/images/minecraft-preview-background.png") center / contain no-repeat;
-    background-color: #111827;
+    background: url("assets/images/minecraft-preview-background.png") center / cover no-repeat;
+    background-color: #8fb5f1;
     border: 1px solid #101820;
     border-radius: 0;
     font-family: var(--minecraft);
@@ -657,12 +657,12 @@ h3 {
 .preview-chat-panel {
     position: relative;
     aspect-ratio: 16 / 9;
-    min-height: 280px;
+    min-height: 420px;
     margin-bottom: 16px;
     overflow: hidden;
     color: #ffffff;
-    background: url("assets/images/minecraft-preview-background.png") center / contain no-repeat;
-    background-color: #111827;
+    background: url("assets/images/minecraft-preview-background.png") center / cover no-repeat;
+    background-color: #8fb5f1;
     border-color: #101820;
     box-shadow: none;
 }
