@@ -317,7 +317,7 @@ function renderTitleTool() {
     setBreadcrumb([{ label: "PumpkinAPI", route: "tools" }, { label: "Tools", route: "tools" }, { label: "Title Generator" }]);
 
     app.innerHTML = `
-        <section class="tool-grid">
+        <section class="tool-grid wide-preview">
             <form class="tool-form" id="titleForm">
                 <p class="eyebrow">player + text-component</p>
                 <h2>Title Generator</h2>
@@ -426,7 +426,7 @@ function renderTextTool() {
     setBreadcrumb([{ label: "PumpkinAPI", route: "tools" }, { label: "Tools", route: "tools" }, { label: "TextComponent Generator" }]);
 
     app.innerHTML = `
-        <section class="tool-grid">
+        <section class="tool-grid wide-preview">
             <form class="tool-form" id="textForm">
                 <p class="eyebrow">chat + hover + click</p>
                 <h2>TextComponent Generator</h2>

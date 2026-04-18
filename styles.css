@@ -482,6 +482,10 @@ h3 {
     overflow: hidden;
 }
 
+.tool-grid.wide-preview {
+    grid-template-columns: minmax(260px, 0.68fr) minmax(0, 1.32fr);
+}
+
 .tool-form,
 .tool-output {
     padding: 24px;
@@ -559,7 +563,7 @@ h3 {
     position: relative;
     display: grid;
     aspect-ratio: 16 / 9;
-    min-height: 280px;
+    min-height: 340px;
     place-items: center;
     margin-bottom: 16px;
     padding: 24px;
@@ -647,10 +651,10 @@ h3 {
 .preview-play span {
     width: 0;
     height: 0;
-    margin-left: 4px;
     border-top: 9px solid transparent;
     border-bottom: 9px solid transparent;
     border-left: 14px solid #ffffff;
+    transform: translate(2px, -1px);
 }
 
 .preview-play:hover,
@@ -699,7 +703,7 @@ h3 {
 
 .preview-chat-panel {
     aspect-ratio: 16 / 9;
-    min-height: 220px;
+    min-height: 280px;
     margin-bottom: 16px;
     color: #ffffff;
     background:
@@ -819,7 +823,8 @@ pre code {
     .topbar,
     .hero,
     .reference-grid,
-    .tool-grid {
+    .tool-grid,
+    .tool-grid.wide-preview {
         grid-template-columns: 1fr;
     }
 
